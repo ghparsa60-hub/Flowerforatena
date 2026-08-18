@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>My Love Flower ❤️</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Vazirmatn:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{
+    margin:0;width:100%;height:100%;overflow:hidden;
+    background:radial-gradient(120% 90% at 50% 15%,#2a0e3f 0%,#180826 45%,#0a0413 100%);
+    font-family:'Vazirmatn',sans-serif;
+    color:#ffd7e8;
+  }
+
+  #stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+  .star{position:absolute;border-radius:50%;background:#fff;animation:twinkle ease-in-out infinite}
+  @keyframes twinkle{
+    0%,100%{opacity:.15;transform:scale(.8)}
+    50%{opacity:1;transform:scale(1.15)}
+  }
+
+  #intro{
+    position:fixed;inset:0;z-index:30;
+    background:radial-gradient(120% 90% at 50% 20%,#2a0e3f 0%,#150723 55%,#08030f 100%);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:0 32px;
+    transition:opacity .9s ease,visibility .9s ease;
+  }
+  #intro.hide{opacity:0;visibility:hidden;pointer-events:none}
+  #intro .name{
+    font-family:'Dancing Script',cursive;font-weight:700;
+    font-size:60px;color:#ffb0d3;margin:0 0 6px;
+    text-shadow:0 0 18px #ff4f9a,0 0 46px #ff2f7c80;
+  }
+  #intro p{font-size:15px;font-weight:300;color:#e7c9dc;margin:0 0 30px;max-width:280px;line-height:2}
+  #intro button{
+    border:none;cursor:pointer;
+    background:linear-gradient(135deg,#ff5fa0,#ff2f7c);
+    color:#fff;font-family:'Vazirmatn';font-weight:600;
+    border-radius:999px;padding:14px 34px;font-size:15px;letter-spacing:.5px;
+    box-shadow:0 8px 28px #ff2f7c55,0 0 0 1px #ff9dc340 inset;
+  }
+
+  .scene{
+    position:relative;z-index:2;
+    width:100vw;height:100vh;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:10px;
+  }
+  #flowerCanvas{cursor:pointer;touch-action:manipulation}
+
+  .signature{
+    font-family:'Dancing Script',cursive;font-weight:700;
+    font-size:42px;color:#ffc3dc;
+    text-shadow:0 0 16px #ff4f9a;
+    opacity:0;animation:fadeUp 1s ease 19.8s forwards;
+  }
+  .hint{
+    font-size:12px;color:#c9a6bd;letter-spacing:1.5px;opacity:0;
+    animation:fadeUp 1s ease 20.2s forwards;
+  }
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<div id="stars"></div>
+
+<div id="intro">
+  <div class="name">Atena</div>
+  <p>یه گل کوچیک دیگه هم برات کاشتم...<br>رو گل بزن تا باز بشه</p>
+  <button onclick="start()">بازش کن</button>
+</div>
+
+<div class="scene">
+  <canvas id="flowerCanvas" onclick="replay()" dir="ltr"></canvas>
+  <div class="signature">Atena</div>
+  <div class="hint">برای دیدن دوباره‌ی باز شدن گل، بزن</div>
+</div>
+
+<script>
+/* ---------- background stars ---------- */
+const starsEl = document.getElementById('stars');
+for(let i=0;i<60;i++){
+  const s = document.createElement('div');
+  s.className = 'star';
+  const size = Math.random()*2 + 1;
+  s.style.width = size+'px';
+  s.style.height = size+'px';
+  s.style.left = Math.random()*100+'%';
+  s.style.top = Math.random()*70+'%';
+  s.style.animationDuration = (Math.random()*3+2)+'s';
+  s.style.animationDelay = (Math.random()*3)+'s';
+  starsEl.appendChild(s);
+}
+
+/* =========================================================
+   Flower rendering — a direct port of the turtle-graphics
+   "my love" flower, drawn on canvas with a bloom animation.
+   ========================================================= */
+const canvas = document.getElementById('flowerCanvas');
+const ctx = canvas.getContext('2d');
+ctx.direction = 'ltr';
+
+const WORD = 'my love';
+
+// world (turtle-coordinate) bounding box the whole drawing fits in
+const WX0=-200, WX1=200, WY0=-330, WY1=180; // left,right,bottom,top
+const WORLD_W = WX1-WX0, WORLD_H = WY1-WY0;
+
+let dispW, dispH, dpr;
+function sizeCanvas(){
+  dispW = Math.min(window.innerWidth*0.92, 380);
+  dispH = dispW * (WORLD_H/WORLD_W);
+  dpr = window.devicePixelRatio || 1;
+  canvas.style.width = dispW+'px';
+  canvas.style.height = dispH+'px';
+  canvas.width = dispW*dpr;
+  canvas.height = dispH*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.direction = 'ltr';
+}
+sizeCanvas();
+window.addEventListener('resize', sizeCanvas);
+
+function toCanvas(x,y){
+  return [
+    (x-WX0)/WORLD_W*dispW,
+    (WY1-y)/WORLD_H*dispH
+  ];
+}
+function scaleLen(len){ return len/WORLD_W*dispW; }
+
+/* ---- turtle arc helper: replicates turtle.circle(radius, extent) ---- */
+function turtleArc(p0, headingDeg, radius, extentDeg, steps=40){
+  const H0 = headingDeg*Math.PI/180;
+  const cx = p0[0] + radius*Math.cos(H0+Math.PI/2);
+  const cy = p0[1] + radius*Math.sin(H0+Math.PI/2);
+  const phi0 = H0 - Math.PI/2;
+  const pts = [];
+  for(let i=0;i<=steps;i++){
+    const t = (extentDeg*Math.PI/180)*(i/steps);
+    const phi = phi0+t;
+    pts.push([cx+radius*Math.cos(phi), cy+radius*Math.sin(phi)]);
+  }
+  return {pts, endPos:pts[pts.length-1], endHeading: headingDeg+extentDeg};
+}
+
+/* ---- petal helper: replicates draw_petal (fan of repeated words) ---- */
+function petalPoints(base, baseAngleRad, length, width, points=26){
+  const [bx,by] = base;
+  const cosA=Math.cos(baseAngleRad), sinA=Math.sin(baseAngleRad);
+  const pts=[];
+  for(let i=0;i<=points;i++){
+    const theta = i*Math.PI/points;
+    const out = length*Math.sin(theta);
+    const side = width*Math.sin(theta)*Math.cos(theta);
+    const rx = out*cosA - side*sinA;
+    const ry = out*sinA + side*cosA;
+    pts.push([bx+rx, by+ry]);
+  }
+  return pts;
+}
+function drawWordPoints(pts, frac, color, fontPx){
+  const n = Math.max(0, Math.floor(pts.length*frac));
+  if(n<=0) return;
+  ctx.fillStyle = color;
+  ctx.font = `bold ${fontPx}px Arial`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for(let i=0;i<n;i++){
+    const [cx,cy] = toCanvas(pts[i][0], pts[i][1]);
+    ctx.fillText(WORD, cx, cy);
+  }
+}
+function strokePathReveal(pts, frac, color, widthPx){
+  const n = Math.max(0, Math.floor(pts.length*frac));
+  if(n<2) return;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = widthPx;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  const [sx,sy] = toCanvas(pts[0][0], pts[0][1]);
+  ctx.moveTo(sx,sy);
+  for(let i=1;i<n;i++){
+    const [cx,cy] = toCanvas(pts[i][0], pts[i][1]);
+    ctx.lineTo(cx,cy);
+  }
+  ctx.stroke();
+}
+
+/* ---- build the static geometry once (positions don't change) ---- */
+const stem1 = turtleArc([0,-30], 260, 250, 25);
+const leaf1Base = stem1.endPos, leaf1Head = stem1.endHeading;
+const leaf1 = petalPoints(leaf1Base, 160*Math.PI/180, 50, 25, 22);
+
+const stem2 = turtleArc(leaf1Base, leaf1Head, 250, 20);
+const leaf2Base = stem2.endPos, leaf2Head = stem2.endHeading;
+const leaf2 = petalPoints(leaf2Base, 20*Math.PI/180, 55, 28, 22);
+
+const stem3 = turtleArc(leaf2Base, leaf2Head, 250, 30);
+
+const RINGS = [
+  {radius:0,  count:4,  length:40,  width:15, color:'#ffe6f2', offset:45},
+  {radius:10, count:5,  length:50,  width:25, color:'#ffb3d9', offset:0},
+  {radius:20, count:7,  length:70,  width:35, color:'#ff66b2', offset:30},
+  {radius:30, count:9,  length:90,  width:45, color:'#ff1493', offset:15},
+  {radius:40, count:12, length:110, width:55, color:'#c71585', offset:0},
+];
+const ringPetals = RINGS.map(ring=>{
+  const petals=[];
+  for(let i=0;i<ring.count;i++){
+    const angleDeg = (360/ring.count)*i + ring.offset;
+    const angleRad = angleDeg*Math.PI/180;
+    const base = [ring.radius*Math.cos(angleRad), ring.radius*Math.sin(angleRad)];
+    petals.push({pts: petalPoints(base, angleRad, ring.length, ring.width, 26), color: ring.color});
+  }
+  return petals;
+});
+
+// scattered little hearts outside the flower (fixed random seed per page load)
+const scatterHearts = [];
+(function(){
+  let tries=0;
+  while(scatterHearts.length<12 && tries<200){
+    tries++;
+    const x = (Math.random()*500-250);
+    const y = (Math.random()*500-250);
+    if(Math.hypot(x,y) > 130){
+      scatterHearts.push([x,y]);
+    }
+  }
+})();
+
+/* ---- animation timeline (ms) — scaled so full bloom takes ~20s ---- */
+const SPEED = 3.9; // multiplier applied to every stage below
+const T = {
+  stem1:[0*SPEED,500*SPEED], leaf1:[420*SPEED,350*SPEED],
+  stem2:[820*SPEED,450*SPEED], leaf2:[1220*SPEED,350*SPEED],
+  stem3:[1620*SPEED,500*SPEED],
+  ringsStart: 2050*SPEED, ringStagger: 300*SPEED, ringDur: 620*SPEED,
+  hearts: [0,0], // set below
+};
+T.hearts = [T.ringsStart + RINGS.length*T.ringStagger + T.ringDur + 150*SPEED, 500*SPEED];
+const TOTAL_DUR = T.hearts[0]+T.hearts[1]+300*SPEED;
+
+function frac(elapsed, start, dur){
+  return Math.max(0, Math.min(1, (elapsed-start)/dur));
+}
+function easeOut(x){ return 1-Math.pow(1-x,3); }
+
+let animStart = null;
+let idlePhase = 0;
+
+function render(now){
+  if(animStart===null) animStart = now;
+  const elapsed = now - animStart;
+
+  ctx.clearRect(0,0,dispW,dispH);
+
+  // gentle overall sway once fully bloomed
+  let swayDeg = 0, swayScale = 1;
+  if(elapsed > TOTAL_DUR){
+    const idle = (elapsed-TOTAL_DUR)/1000;
+    swayDeg = Math.sin(idle*0.6)*1.6;
+    swayScale = 1 + Math.sin(idle*0.9)*0.015;
+  }
+  ctx.save();
+  const [ox,oy] = toCanvas(0,-60); // pivot roughly around lower stem area
+  ctx.translate(ox,oy);
+  ctx.rotate(swayDeg*Math.PI/180);
+  ctx.scale(swayScale,swayScale);
+  ctx.translate(-ox,-oy);
+
+  // stem 1 + leaf 1
+  strokePathReveal(stem1.pts, easeOut(frac(elapsed,...T.stem1)), '#2e8b57', scaleLen(4));
+  drawWordPoints(leaf1, easeOut(frac(elapsed,...T.leaf1)), '#2e8b57', Math.max(6,scaleLen(8)));
+
+  // stem 2 + leaf 2
+  strokePathReveal(stem2.pts, easeOut(frac(elapsed,...T.stem2)), '#2e8b57', scaleLen(4));
+  drawWordPoints(leaf2, easeOut(frac(elapsed,...T.leaf2)), '#2e8b57', Math.max(6,scaleLen(8)));
+
+  // stem 3
+  strokePathReveal(stem3.pts, easeOut(frac(elapsed,...T.stem3)), '#2e8b57', scaleLen(4));
+
+  // flower rings, innermost to outermost
+  ringPetals.forEach((petals, ri)=>{
+    const ringStart = T.ringsStart + ri*T.ringStagger;
+    petals.forEach((petal, pi)=>{
+      const petalDelay = (pi/petals.length) * T.ringDur * 0.35;
+      const f = easeOut(frac(elapsed, ringStart+petalDelay, T.ringDur*0.65));
+      drawWordPoints(petal.pts, f, petal.color, Math.max(6,scaleLen(8)));
+    });
+  });
+
+  // scattered little hearts
+  const heartsF = easeOut(frac(elapsed, ...T.hearts));
+  if(heartsF>0){
+    ctx.globalAlpha = heartsF;
+    ctx.fillStyle = '#ff99cc';
+    ctx.font = `bold ${Math.max(8,scaleLen(11))}px Courier New`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    scatterHearts.forEach(([x,y])=>{
+      const [cx,cy] = toCanvas(x,y);
+      ctx.fillText('<3', cx, cy);
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  ctx.restore();
+  requestAnimationFrame(render);
+}
+requestAnimationFrame(render);
+
+/* ---------- intro & replay ---------- */
+function start(){
+  document.getElementById('intro').classList.add('hide');
+  if(navigator.vibrate) navigator.vibrate([25,35,25]);
+}
+function replay(){
+  animStart = performance.now();
+  if(navigator.vibrate) navigator.vibrate(20);
+}
+</script>
+</body>
+</html>
